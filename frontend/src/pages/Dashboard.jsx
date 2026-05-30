@@ -1,13 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'; // <-- 1. Importamos useCallback
 import { useNavigate } from 'react-router-dom';
 import { obtenerCursos, crearCurso } from '../services/cursoService';
-import { matricularEstudiante } from '../services/matriculaService';
+import { matricularEstudiante, obtenerEstudiantesDeCurso } from '../services/matriculaService'; 
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const [cursos, setCursos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  
+  const [estudiantesCurso, setEstudiantesCurso] = useState([]);
+  const [cursoViendo, setCursoViendo] = useState(null);
   
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [nuevoTitulo, setNuevoTitulo] = useState('');
@@ -67,6 +70,23 @@ export const Dashboard = () => {
     try {
       await matricularEstudiante(cursoId);
       alert('¡Te has matriculado exitosamente en el curso!');
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleVerEstudiantes = async (cursoId) => {
+    // Si ya estamos viendo este curso, lo cerramos
+    if (cursoViendo === cursoId) {
+      setCursoViendo(null);
+      setEstudiantesCurso([]);
+      return;
+    }
+
+    try {
+      const data = await obtenerEstudiantesDeCurso(cursoId);
+      setEstudiantesCurso(data);
+      setCursoViendo(cursoId);
     } catch (err) {
       alert(err.message);
     }
@@ -148,7 +168,7 @@ export const Dashboard = () => {
                     <p className="text-gray-600 text-sm mb-4">{curso.descripcion}</p>
                   </div>
                   
-                  {/* Botón condicional: Solo para Estudiantes */}
+                  {/* Botón para Estudiantes */}
                   {rolUsuario === 'estudiante' && curso.estado && (
                     <button 
                       onClick={() => handleMatricular(curso.id)}
@@ -157,11 +177,39 @@ export const Dashboard = () => {
                       Inscribirse al Curso
                     </button>
                   )}
+
+                  {/* Botón para Profesores/Admins */}
+                  {puedeCrear && (
+                    <button 
+                      onClick={() => handleVerEstudiantes(curso.id)}
+                      className="w-full mt-4 bg-gray-50 text-gray-700 font-semibold py-2 rounded border border-gray-300 hover:bg-gray-200 transition"
+                    >
+                      {cursoViendo === curso.id ? 'Ocultar Estudiantes' : 'Ver Estudiantes'}
+                    </button>
+                  )}
+
+                 {/* Lista Desplegable de Estudiantes */}
+                  {cursoViendo === curso.id && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                      <h4 className="text-sm font-bold text-blue-800 mb-2">Alumnos Matriculados:</h4>
+                      {estudiantesCurso.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">No hay alumnos inscritos aún.</p>
+                      ) : (
+                        <ul className="text-sm text-gray-700 space-y-1">
+                          {estudiantesCurso.map((mat) => (
+                            <li key={mat.id} className="flex justify-between border-b border-blue-100 pb-1">
+                              <span>👤 {mat.estudiante?.nombre} {mat.estudiante?.apellido}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
                 </div>
               ))}
-              {cursos.length === 0 && (
-                <p className="text-gray-500 col-span-full">No hay cursos disponibles en este momento.</p>
-              )}
+              
+              {/* === ESTO ES LO QUE TE FALTABA AGREGAR === */}
             </div>
           )}
         </div>
