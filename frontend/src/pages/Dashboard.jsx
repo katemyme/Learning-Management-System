@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'; // <-- 1. Importamos useCallback
 import { useNavigate } from 'react-router-dom';
 import { obtenerCursos, crearCurso } from '../services/cursoService';
+import { matricularEstudiante } from '../services/matriculaService';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -57,6 +58,15 @@ export const Dashboard = () => {
       setMostrarFormulario(false);
       
       cargarDatos(); 
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleMatricular = async (cursoId) => {
+    try {
+      await matricularEstudiante(cursoId);
+      alert('¡Te has matriculado exitosamente en el curso!');
     } catch (err) {
       alert(err.message);
     }
@@ -126,18 +136,29 @@ export const Dashboard = () => {
 
           {!cargando && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {cursos.map((curso) => (
-                <div key={curso.id} className="border rounded-lg p-5 hover:shadow-lg transition">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold text-blue-600">{curso.titulo}</h3>
-                    <span className={`px-2 py-1 text-xs font-bold rounded-full ${curso.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {curso.estado ? 'Activo' : 'Inactivo'}
-                    </span>
+                  {cursos.map((curso) => (
+                <div key={curso.id} className="border rounded-lg p-5 hover:shadow-lg transition flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-bold text-blue-600">{curso.titulo}</h3>
+                      <span className={`px-2 py-1 text-xs font-bold rounded-full ${curso.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {curso.estado ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-4">{curso.descripcion}</p>
                   </div>
-                  <p className="text-gray-600 text-sm mb-4">{curso.descripcion}</p>
+                  
+                  {/* Botón condicional: Solo para Estudiantes */}
+                  {rolUsuario === 'estudiante' && curso.estado && (
+                    <button 
+                      onClick={() => handleMatricular(curso.id)}
+                      className="w-full mt-4 bg-blue-50 text-blue-600 font-semibold py-2 rounded border border-blue-200 hover:bg-blue-600 hover:text-white transition"
+                    >
+                      Inscribirse al Curso
+                    </button>
+                  )}
                 </div>
               ))}
-              
               {cursos.length === 0 && (
                 <p className="text-gray-500 col-span-full">No hay cursos disponibles en este momento.</p>
               )}
