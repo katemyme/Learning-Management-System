@@ -27,3 +27,23 @@ export const matricularEstudiante = async (curso_id) => {
 
   return data;
 };
+
+export const obtenerEstudiantesDeCurso = async (cursoId) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${API_URL}/curso/${cursoId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.mensaje || 'Error al obtener la lista de estudiantes');
+  }
+
+  return data;
+};
