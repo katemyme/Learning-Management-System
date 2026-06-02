@@ -47,3 +47,23 @@ export const obtenerEstudiantesDeCurso = async (cursoId) => {
 
   return data;
 };
+// NUEVA FUNCIÓN: Obtener los cursos del estudiante logueado
+export const obtenerMisCursos = async () => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${API_URL}/mis-cursos`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.mensaje || 'Error al obtener tus cursos');
+  }
+
+  return data; // Retorna las matrículas con la información de los cursos
+};
