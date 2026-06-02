@@ -1,8 +1,6 @@
 const { Matricula, Curso, Usuario } = require('../models');
 
-// ==========================================
-// MATRICULAR A UN ESTUDIANTE EN UN CURSO
-// ==========================================
+// Función 1: Matricular Estudiante
 const matricularEstudiante = async (req, res) => {
   try {
     const { curso_id, estudiante_id } = req.body;
@@ -40,4 +38,52 @@ const matricularEstudiante = async (req, res) => {
   }
 };
 
-module.exports = { matricularEstudiante };
+// Función 2: Obtener Estudiantes de un Curso específico
+const obtenerEstudiantesPorCurso = async (req, res) => {
+  try {
+    const { cursoId } = req.params;
+    
+    const matriculas = await Matricula.findAll({
+      where: { curso_id: cursoId },
+      include: [{
+        model: Usuario,
+        as: 'estudiante',
+        attributes: ['id', 'nombre', 'apellido', 'email'] 
+      }]
+    });
+
+    res.status(200).json(matriculas);
+  } catch (error) {
+ // 👇 AÑADE ESTA LÍNEA PARA VER EL CHISME COMPLETO 👇
+    console.error("🔴 ERROR REAL EN SEQUELIZE:", error); 
+    
+    res.status(500).json({ mensaje: 'Error al obtener estudiantes', error: error.message });
+  }
+};
+const obtenerMisCursos = async (req, res) => {
+  try {
+    const estudianteId = req.usuario.id;
+    
+    const misMatriculas = await Matricula.findAll({
+      where: { estudiante_id: estudianteId },
+      include: [{
+        model: Curso,
+        // Recuerda usar el alias correcto aquí si lo configuraste en models/index.js
+        as: 'curso', 
+        attributes: ['id', 'titulo', 'descripcion']
+      }]
+    });
+
+    res.status(200).json(misMatriculas);
+  } catch (error) {
+    console.error("🔴 ERROR EN OBTENER MIS CURSOS:", error);
+    res.status(500).json({ mensaje: 'Error al obtener tus cursos', error: error.message });
+  }
+};
+
+// 2. AL FINAL exportamos todas las funciones juntas
+module.exports = { 
+  matricularEstudiante,
+  obtenerEstudiantesPorCurso,
+  obtenerMisCursos // <-- Ahora sí la encontrará sin problemas
+};
