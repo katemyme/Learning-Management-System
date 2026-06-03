@@ -19,6 +19,10 @@ export const Dashboard = () => {
   const [vistaActual, setVistaActual] = useState('catalogo'); 
   const [misCursos, setMisCursos] = useState([]);
 
+  // NUEVOS ESTADOS PARA EL MODAL ANIMADO
+  const [estudianteACalificar, setEstudianteACalificar] = useState(null);
+  const [notaTemporal, setNotaTemporal] = useState('');
+
   const obtenerRol = () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
@@ -108,26 +112,35 @@ export const Dashboard = () => {
     }
   };
 
-  // NUEVA FUNCIÓN: Calificar al estudiante
-  const handleAsignarNota = async (matriculaId) => {
-    const notaIngresada = window.prompt("Ingresa la calificación para este estudiante (Ej: 95, Aprobado, A):");
-    
-    // Si el profe cancela o deja en blanco, no hacemos nada
-    if (notaIngresada === null || notaIngresada.trim() === '') return;
+  // FUNCIONES DEL MODAL
+  const abrirModalCalificar = (matricula) => {
+    setEstudianteACalificar({
+      id: matricula.id,
+      nombre: `${matricula.estudiante?.nombre || matricula.Usuario?.nombre} ${matricula.estudiante?.apellido || matricula.Usuario?.apellido}`
+    });
+    setNotaTemporal(matricula.nota || ''); // Si ya tiene nota, la mostramos para editarla
+  };
+
+  const guardarNota = async () => {
+    if (!notaTemporal.trim()) return; // No guardamos si está vacío
 
     try {
-      await asignarNota(matriculaId, notaIngresada);
-      alert('¡Calificación guardada!');
-      // Refrescamos la lista de estudiantes para ver la nota actualizada
+      await asignarNota(estudianteACalificar.id, notaTemporal);
+      
+      // Actualizamos la lista de estudiantes por debajo
       const data = await obtenerEstudiantesDeCurso(cursoViendo);
       setEstudiantesCurso(data);
+      
+      // Cerramos el modal
+      setEstudianteACalificar(null);
+      setNotaTemporal('');
     } catch (err) {
       alert(err.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen bg-gray-100 p-8 relative">
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}
@@ -296,7 +309,7 @@ export const Dashboard = () => {
                                   </span>
                                   
                                   <button 
-                                    onClick={() => handleAsignarNota(mat.id)}
+                                    onClick={() => abrirModalCalificar(mat)}
                                     className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded transition"
                                   >
                                     ✏️ Calificar
@@ -319,6 +332,49 @@ export const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* ========================================= */}
+      {/* MODAL ANIMADO DE CALIFICACIÓN             */}
+      {/* ========================================= */}
+      {estudianteACalificar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-96 max-w-full transform transition-all">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Asignar Calificación</h3>
+              <button onClick={() => setEstudianteACalificar(null)} className="text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+            </div>
+            
+            <p className="text-gray-600 text-sm mb-4">
+              Evaluando a: <span className="font-bold text-blue-600">{estudianteACalificar.nombre}</span>
+            </p>
+            
+            <input 
+              type="text" 
+              placeholder="Ej. 95, Aprobado, A+" 
+              value={notaTemporal}
+              onChange={(e) => setNotaTemporal(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-6 text-lg"
+              autoFocus
+            />
+            
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => setEstudianteACalificar(null)}
+                className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition font-semibold"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={guardarNota}
+                className="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg shadow-md transition"
+              >
+                Guardar Nota
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 };
