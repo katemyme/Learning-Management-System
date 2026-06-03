@@ -7,13 +7,13 @@ const { verificarToken, verificarRol } = require('../middlewares/authMiddleware'
 router.get('/', verificarToken, cursoController.obtenerCursos);
 
 // Crear un curso
-router.post('/', verificarToken, verificarRol(['admin', 'profesor']), cursoController.crearCurso);
+router.post('/', verificarToken, verificarRol(['admin']), cursoController.crearCurso);
 
 // ACTUALIZAR un curso (Asegúrate de que esta línea exista)
 router.put(
   '/:id', 
   verificarToken, 
-  verificarRol(['admin', 'profesor']), 
+  verificarRol(['admin']), 
   cursoController.actualizarCurso
 );
 
@@ -21,7 +21,7 @@ router.put(
 router.delete(
   '/:id', 
   verificarToken, 
-  verificarRol(['admin', 'profesor']), 
+  verificarRol(['admin']), 
   cursoController.eliminarCurso
 );
 

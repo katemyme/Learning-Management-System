@@ -31,8 +31,10 @@ export const Dashboard = () => {
     }
   };
 
-  const rolUsuario = obtenerRol();
-  const puedeCrear = rolUsuario === 'admin' || rolUsuario === 'profesor';
+const rolUsuario = obtenerRol();
+
+  const puedeCrearCursos = rolUsuario === 'admin'; 
+  const puedeVerEstudiantes = rolUsuario === 'admin' || rolUsuario === 'profesor';
   const esEstudiante = rolUsuario === 'estudiante';
 
   const cargarDatos = useCallback(async () => {
@@ -177,7 +179,7 @@ export const Dashboard = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-700">Catálogo General</h2>
               
-              {puedeCrear && (
+              {puedeCrearCursos && (
                 <button 
                   onClick={() => setMostrarFormulario(!mostrarFormulario)}
                   className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition"
@@ -188,7 +190,7 @@ export const Dashboard = () => {
             </div>
 
             {/* Formulario Crear Curso */}
-            {mostrarFormulario && puedeCrear && (
+            {mostrarFormulario && puedeCrearCursos && (
               <form onSubmit={handleCrearCurso} className="mb-8 p-4 border-2 border-green-200 bg-green-50 rounded-lg">
                 <h3 className="font-bold text-green-800 mb-3">Detalles del Nuevo Curso</h3>
                 <div className="flex gap-4">
@@ -244,7 +246,7 @@ export const Dashboard = () => {
                     )}
 
                     {/* Botón para Profesores/Admins */}
-                    {puedeCrear && (
+                    {puedeVerEstudiantes && (
                       <button 
                         onClick={() => handleVerEstudiantes(curso.id)}
                         className="w-full mt-4 bg-gray-50 text-gray-700 font-semibold py-2 rounded border border-gray-300 hover:bg-gray-200 transition"
