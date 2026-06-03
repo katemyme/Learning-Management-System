@@ -15,5 +15,7 @@ router.post(
 router.get('/curso/:cursoId', verificarToken, verificarRol(['admin', 'profesor']), matriculaController.obtenerEstudiantesPorCurso);
 // Añade esta línea a tus rutas
 router.get('/mis-cursos', verificarToken, verificarRol(['estudiante']), matriculaController.obtenerMisCursos);
+// Añade esto donde tienes tus otras rutas de matrículas
+router.put('/:id/nota', verificarToken, verificarRol(['admin', 'profesor']), matriculaController.asignarNota);
 
 module.exports = router;

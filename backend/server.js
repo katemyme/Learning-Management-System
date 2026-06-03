@@ -27,7 +27,7 @@ app.use('/api/evaluaciones', evaluacionRoutes);
 // Función para iniciar el servidor
 const iniciarServidor = async () => {
   try {
-    await sequelize.sync(); // Sin parámetros para evitar conflictos con SQL Server
+    await sequelize.sync() // Sin parámetros para evitar conflictos con SQL Server
     console.log('✅ Base de datos sincronizada correctamente.');
 
     const PORT = process.env.PORT || 3000;

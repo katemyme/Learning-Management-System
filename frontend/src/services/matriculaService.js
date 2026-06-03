@@ -67,3 +67,24 @@ export const obtenerMisCursos = async () => {
 
   return data; // Retorna las matrículas con la información de los cursos
 };
+// NUEVA FUNCIÓN: Asignar calificación a un estudiante
+export const asignarNota = async (matriculaId, nota) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${API_URL}/${matriculaId}/nota`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ nota })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.mensaje || 'Error al asignar la nota');
+  }
+
+  return data;
+};

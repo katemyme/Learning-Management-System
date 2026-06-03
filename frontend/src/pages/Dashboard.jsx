@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerCursos, crearCurso } from '../services/cursoService';
-import { matricularEstudiante, obtenerEstudiantesDeCurso, obtenerMisCursos } from '../services/matriculaService'; 
+import { matricularEstudiante, obtenerEstudiantesDeCurso, obtenerMisCursos, asignarNota } from '../services/matriculaService'; 
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,8 +16,7 @@ export const Dashboard = () => {
   const [nuevoTitulo, setNuevoTitulo] = useState('');
   const [nuevaDescripcion, setNuevaDescripcion] = useState('');
 
-  // NUEVOS ESTADOS PARA LAS PESTAÑAS DEL ESTUDIANTE
-  const [vistaActual, setVistaActual] = useState('catalogo'); // Puede ser 'catalogo' o 'misCursos'
+  const [vistaActual, setVistaActual] = useState('catalogo'); 
   const [misCursos, setMisCursos] = useState([]);
 
   const obtenerRol = () => {
@@ -31,8 +30,7 @@ export const Dashboard = () => {
     }
   };
 
-const rolUsuario = obtenerRol();
-
+  const rolUsuario = obtenerRol();
   const puedeCrearCursos = rolUsuario === 'admin'; 
   const puedeVerEstudiantes = rolUsuario === 'admin' || rolUsuario === 'profesor';
   const esEstudiante = rolUsuario === 'estudiante';
@@ -48,7 +46,6 @@ const rolUsuario = obtenerRol();
     }
   }, []); 
 
-  // Nueva función para cargar "Mis Cursos"
   const cargarMisCursos = useCallback(async () => {
     try {
       const data = await obtenerMisCursos();
@@ -90,7 +87,6 @@ const rolUsuario = obtenerRol();
     try {
       await matricularEstudiante(cursoId);
       alert('¡Te has matriculado exitosamente en el curso!');
-      // Si se matricula con éxito, lo mandamos a su pestaña de cursos
       setVistaActual('misCursos'); 
     } catch (err) {
       alert(err.message);
@@ -107,6 +103,24 @@ const rolUsuario = obtenerRol();
       const data = await obtenerEstudiantesDeCurso(cursoId);
       setEstudiantesCurso(data);
       setCursoViendo(cursoId);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // NUEVA FUNCIÓN: Calificar al estudiante
+  const handleAsignarNota = async (matriculaId) => {
+    const notaIngresada = window.prompt("Ingresa la calificación para este estudiante (Ej: 95, Aprobado, A):");
+    
+    // Si el profe cancela o deja en blanco, no hacemos nada
+    if (notaIngresada === null || notaIngresada.trim() === '') return;
+
+    try {
+      await asignarNota(matriculaId, notaIngresada);
+      alert('¡Calificación guardada!');
+      // Refrescamos la lista de estudiantes para ver la nota actualizada
+      const data = await obtenerEstudiantesDeCurso(cursoViendo);
+      setEstudiantesCurso(data);
     } catch (err) {
       alert(err.message);
     }
@@ -159,12 +173,21 @@ const rolUsuario = obtenerRol();
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {misCursos.map((mat) => (
-                  <div key={mat.id} className="border-2 border-blue-100 rounded-lg p-5 bg-blue-50 hover:shadow-lg transition">
+                  <div key={mat.id} className="border-2 border-blue-100 rounded-lg p-5 bg-blue-50 hover:shadow-lg transition flex flex-col">
                     <h3 className="text-xl font-bold text-blue-800 mb-2">{mat.curso?.titulo || mat.Curso?.titulo || 'Curso sin nombre'}</h3>
                     <p className="text-gray-600 text-sm mb-4">{mat.curso?.descripcion || mat.Curso?.descripcion || 'Sin descripción'}</p>
-                    <div className="bg-white p-3 rounded border border-blue-100 mt-auto">
-                      <p className="text-xs text-gray-500 uppercase font-bold">Estado de matrícula:</p>
-                      <p className="text-sm font-semibold text-green-600">✅ Activa</p>
+                    
+                    <div className="bg-white p-3 rounded border border-blue-100 mt-auto flex justify-between items-center">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase font-bold">Estado:</p>
+                        <p className="text-sm font-semibold text-green-600">✅ Activa</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 uppercase font-bold">Calificación:</p>
+                        <p className={`text-lg font-bold ${mat.nota ? 'text-blue-700' : 'text-gray-400'}`}>
+                          {mat.nota || 'Pendiente'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -173,7 +196,7 @@ const rolUsuario = obtenerRol();
           </div>
         )}
 
-        {/* VISTA: CATÁLOGO DE CURSOS (Admin, Profesores y Estudiantes) */}
+        {/* VISTA: CATÁLOGO DE CURSOS */}
         {vistaActual === 'catalogo' && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-6">
@@ -255,17 +278,30 @@ const rolUsuario = obtenerRol();
                       </button>
                     )}
 
-                    {/* Lista Desplegable de Estudiantes */}
+                    {/* Lista Desplegable de Estudiantes con Calificación */}
                     {cursoViendo === curso.id && (
                       <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                        <h4 className="text-sm font-bold text-blue-800 mb-2">Alumnos Matriculados:</h4>
+                        <h4 className="text-sm font-bold text-blue-800 mb-3">Alumnos Matriculados:</h4>
                         {estudiantesCurso.length === 0 ? (
                           <p className="text-xs text-gray-500 italic">No hay alumnos inscritos aún.</p>
                         ) : (
-                          <ul className="text-sm text-gray-700 space-y-1">
+                          <ul className="text-sm text-gray-700 space-y-2">
                             {estudiantesCurso.map((mat) => (
-                              <li key={mat.id} className="flex justify-between border-b border-blue-100 pb-1">
-                                <span>👤 {mat.estudiante?.nombre || mat.Usuario?.nombre} {mat.estudiante?.apellido || mat.Usuario?.apellido}</span>
+                              <li key={mat.id} className="flex flex-col gap-2 border-b border-blue-200 pb-2">
+                                <span className="font-semibold">👤 {mat.estudiante?.nombre || mat.Usuario?.nombre} {mat.estudiante?.apellido || mat.Usuario?.apellido}</span>
+                                
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs bg-white border px-2 py-1 rounded shadow-sm">
+                                    Nota actual: <span className="font-bold text-blue-700">{mat.nota || 'Sin calificar'}</span>
+                                  </span>
+                                  
+                                  <button 
+                                    onClick={() => handleAsignarNota(mat.id)}
+                                    className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded transition"
+                                  >
+                                    ✏️ Calificar
+                                  </button>
+                                </div>
                               </li>
                             ))}
                           </ul>

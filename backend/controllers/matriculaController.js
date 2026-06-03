@@ -80,10 +80,35 @@ const obtenerMisCursos = async (req, res) => {
     res.status(500).json({ mensaje: 'Error al obtener tus cursos', error: error.message });
   }
 };
+// NUEVA FUNCIÓN: Asignar o actualizar la nota de un estudiante
+const asignarNota = async (req, res) => {
+  try {
+    const { id } = req.params; // El ID de la matrícula
+    const { nota } = req.body; // La calificación que escribe el profesor
+
+    // Buscamos la matrícula específica
+    const matricula = await Matricula.findByPk(id);
+    
+    if (!matricula) {
+      return res.status(404).json({ mensaje: 'Matrícula no encontrada' });
+    }
+
+    // Actualizamos y guardamos
+    matricula.nota = nota;
+    await matricula.save();
+
+    res.status(200).json({ mensaje: 'Nota asignada correctamente', matricula });
+  } catch (error) {
+    console.error("🔴 ERROR AL ASIGNAR NOTA:", error);
+    res.status(500).json({ mensaje: 'Error al asignar la nota', error: error.message });
+  }
+};
+
 
 // 2. AL FINAL exportamos todas las funciones juntas
 module.exports = { 
   matricularEstudiante,
+  asignarNota,
   obtenerEstudiantesPorCurso,
   obtenerMisCursos // <-- Ahora sí la encontrará sin problemas
 };
