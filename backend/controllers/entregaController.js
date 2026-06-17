@@ -103,9 +103,10 @@ async function recalcularNota(matricula_id) {
     }
   }
 
+  // Cada corte se suma (el profesor distribuye puntos que suman hasta 100)
   const promedios = Object.values(porCorte)
     .filter(arr => arr.length > 0)
-    .map(arr => arr.reduce((a, b) => a + b, 0) / arr.length);
+    .map(arr => arr.reduce((a, b) => a + b, 0));
 
   if (promedios.length === 0) return;
 
