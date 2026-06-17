@@ -1,205 +1,178 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerCursos, crearCurso } from '../services/cursoService';
-import { matricularEstudiante, obtenerEstudiantesDeCurso, obtenerMisCursos, asignarNota } from '../services/matriculaService'; 
+import { matricularEstudiante, obtenerEstudiantesDeCurso, obtenerMisCursos, asignarNota } from '../services/matriculaService';
+
+const obtenerRol = () => {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  try { return JSON.parse(atob(token.split('.')[1])).rol; } catch { return null; }
+};
+
+const RolBadge = ({ rol }) => {
+  const config = {
+    admin:      { label: 'Administrador', bg: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
+    profesor:   { label: 'Profesor',      bg: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+    estudiante: { label: 'Estudiante',    bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+  };
+  const c = config[rol] || { label: rol, bg: 'bg-gray-500/20 text-gray-300 border-gray-500/30' };
+  return <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${c.bg}`}>{c.label}</span>;
+};
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const [cursos, setCursos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState('');
-  
-  const [estudiantesCurso, setEstudiantesCurso] = useState([]);
-  const [cursoViendo, setCursoViendo] = useState(null);
-  
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [nuevoTitulo, setNuevoTitulo] = useState('');
-  const [nuevaDescripcion, setNuevaDescripcion] = useState('');
-
-  const [vistaActual, setVistaActual] = useState('catalogo'); 
-  const [misCursos, setMisCursos] = useState([]);
-
-  // NUEVOS ESTADOS PARA EL MODAL ANIMADO
-  const [estudianteACalificar, setEstudianteACalificar] = useState(null);
-  const [notaTemporal, setNotaTemporal] = useState('');
-
-  const obtenerRol = () => {
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.rol;
-    } catch {
-      return null;
-    }
-  };
-
   const rolUsuario = obtenerRol();
-  const puedeCrearCursos = rolUsuario === 'admin'; 
+  const puedeCrearCursos   = rolUsuario === 'admin';
   const puedeVerEstudiantes = rolUsuario === 'admin' || rolUsuario === 'profesor';
-  const esEstudiante = rolUsuario === 'estudiante';
+  const esEstudiante        = rolUsuario === 'estudiante';
+
+  const [cursos, setCursos]               = useState([]);
+  const [misCursos, setMisCursos]         = useState([]);
+  const [cargando, setCargando]           = useState(true);
+  const [error, setError]                 = useState('');
+  const [vistaActual, setVistaActual]     = useState('catalogo');
+  const [estudiantesCurso, setEstudiantesCurso] = useState([]);
+  const [cursoViendo, setCursoViendo]     = useState(null);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [nuevoTitulo, setNuevoTitulo]     = useState('');
+  const [nuevaDescripcion, setNuevaDescripcion] = useState('');
+  const [estudianteACalificar, setEstudianteACalificar] = useState(null);
+  const [notaTemporal, setNotaTemporal]   = useState('');
 
   const cargarDatos = useCallback(async () => {
-    try {
-      const data = await obtenerCursos();
-      setCursos(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
-  }, []); 
+    setCargando(true);
+    try { const data = await obtenerCursos(); setCursos(data); }
+    catch (err) { setError(err.message); }
+    finally { setCargando(false); }
+  }, []);
 
   const cargarMisCursos = useCallback(async () => {
-    try {
-      const data = await obtenerMisCursos();
-      setMisCursos(data);
-    } catch (err) {
-      alert(err.message);
-    }
+    try { const data = await obtenerMisCursos(); setMisCursos(data); }
+    catch (err) { setError(err.message); }
   }, []);
 
   useEffect(() => {
-    if (vistaActual === 'catalogo') {
-      // eslint-disable-next-line
-      cargarDatos();
-    } else if (vistaActual === 'misCursos') {
-      // eslint-disable-next-line
-      cargarMisCursos();
-    }
-  }, [vistaActual, cargarDatos, cargarMisCursos]); 
+    if (vistaActual === 'catalogo') cargarDatos();
+    else if (vistaActual === 'misCursos') cargarMisCursos();
+  }, [vistaActual, cargarDatos, cargarMisCursos]);
 
-  const handleCerrarSesion = () => {
-    localStorage.removeItem('token');
-    navigate('/');
-  };
+  const handleCerrarSesion = () => { localStorage.removeItem('token'); navigate('/'); };
 
   const handleCrearCurso = async (e) => {
     e.preventDefault();
     try {
       await crearCurso(nuevoTitulo, nuevaDescripcion);
-      alert('¡Curso creado exitosamente!');
-      setNuevoTitulo('');
-      setNuevaDescripcion('');
-      setMostrarFormulario(false);
-      cargarDatos(); 
-    } catch (err) {
-      alert(err.message);
-    }
+      setNuevoTitulo(''); setNuevaDescripcion(''); setMostrarFormulario(false);
+      cargarDatos();
+    } catch (err) { alert(err.message); }
   };
 
   const handleMatricular = async (cursoId) => {
-    try {
-      await matricularEstudiante(cursoId);
-      alert('¡Te has matriculado exitosamente en el curso!');
-      setVistaActual('misCursos'); 
-    } catch (err) {
-      alert(err.message);
-    }
+    try { await matricularEstudiante(cursoId); setVistaActual('misCursos'); }
+    catch (err) { alert(err.message); }
   };
 
   const handleVerEstudiantes = async (cursoId) => {
-    if (cursoViendo === cursoId) {
-      setCursoViendo(null);
-      setEstudiantesCurso([]);
-      return;
-    }
-    try {
-      const data = await obtenerEstudiantesDeCurso(cursoId);
-      setEstudiantesCurso(data);
-      setCursoViendo(cursoId);
-    } catch (err) {
-      alert(err.message);
-    }
+    if (cursoViendo === cursoId) { setCursoViendo(null); setEstudiantesCurso([]); return; }
+    try { const data = await obtenerEstudiantesDeCurso(cursoId); setEstudiantesCurso(data); setCursoViendo(cursoId); }
+    catch (err) { alert(err.message); }
   };
 
-  // FUNCIONES DEL MODAL
   const abrirModalCalificar = (matricula) => {
     setEstudianteACalificar({
       id: matricula.id,
-      nombre: `${matricula.estudiante?.nombre || matricula.Usuario?.nombre} ${matricula.estudiante?.apellido || matricula.Usuario?.apellido}`
+      nombre: `${matricula.estudiante?.nombre || ''} ${matricula.estudiante?.apellido || ''}`.trim()
     });
-    setNotaTemporal(matricula.nota_semestre || ''); // Si ya tiene nota, la mostramos para editarla
+    setNotaTemporal(matricula.nota_semestre || '');
   };
 
   const guardarNota = async () => {
-    if (!notaTemporal.trim()) return; // No guardamos si está vacío
-
+    if (!notaTemporal.toString().trim()) return;
     try {
       await asignarNota(estudianteACalificar.id, notaTemporal);
-      
-      // Actualizamos la lista de estudiantes por debajo
       const data = await obtenerEstudiantesDeCurso(cursoViendo);
       setEstudiantesCurso(data);
-      
-      // Cerramos el modal
-      setEstudianteACalificar(null);
-      setNotaTemporal('');
-    } catch (err) {
-      alert(err.message);
-    }
+      setEstudianteACalificar(null); setNotaTemporal('');
+    } catch (err) { alert(err.message); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 relative">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* Header */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Panel de Control (LMS)</h1>
-            <p className="text-sm text-blue-600 font-semibold mt-1">
-              Sesión iniciada como: {rolUsuario ? rolUsuario.toUpperCase() : 'Desconocido'}
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+
+      {/* Header */}
+      <header className="bg-white/5 backdrop-blur-md border-b border-white/10 sticky top-0 z-40 animate-slide-down">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <div>
+              <span className="text-white font-bold text-lg">LMS Platform</span>
+              <div className="mt-0.5"><RolBadge rol={rolUsuario} /></div>
+            </div>
           </div>
-          <button 
+          <button
             onClick={handleCerrarSesion}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-red-500/20 border border-white/10 hover:border-red-500/40 text-gray-300 hover:text-red-300 text-sm font-medium transition-all duration-200"
           >
-            Cerrar Sesión
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Cerrar sesión
           </button>
         </div>
+      </header>
 
-        {/* MENÚ DE PESTAÑAS (Solo visible para estudiantes) */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+
+        {/* Tabs (solo estudiante) */}
         {esEstudiante && (
-          <div className="flex space-x-4 mb-6">
-            <button 
-              onClick={() => setVistaActual('catalogo')}
-              className={`px-6 py-2 rounded-t-lg font-bold transition ${vistaActual === 'catalogo' ? 'bg-white text-blue-600 border-t-4 border-blue-600 shadow-sm' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
-            >
-              Catálogo de Cursos
-            </button>
-            <button 
-              onClick={() => setVistaActual('misCursos')}
-              className={`px-6 py-2 rounded-t-lg font-bold transition ${vistaActual === 'misCursos' ? 'bg-white text-blue-600 border-t-4 border-blue-600 shadow-sm' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
-            >
-              Mis Cursos
-            </button>
+          <div className="flex gap-2 mb-8 animate-slide-up">
+            {[{ id: 'catalogo', label: 'Catálogo de Cursos' }, { id: 'misCursos', label: 'Mis Cursos' }].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setVistaActual(tab.id)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  vistaActual === tab.id
+                    ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/10'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         )}
 
-        {/* VISTA: MIS CURSOS (Solo Estudiantes) */}
+        {/* ===== VISTA: MIS CURSOS ===== */}
         {vistaActual === 'misCursos' && esEstudiante && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold text-gray-700 mb-6">Mis Cursos Inscritos</h2>
+          <div className="animate-fade-in">
+            <h2 className="text-2xl font-bold text-white mb-6">Mis Cursos Inscritos</h2>
             {misCursos.length === 0 ? (
-              <p className="text-gray-500">No estás inscrito en ningún curso todavía. ¡Ve al catálogo y matricúlate!</p>
+              <div className="text-center py-20 text-gray-400">
+                <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <p className="font-medium">No estás inscrito en ningún curso</p>
+                <p className="text-sm mt-1">Ve al catálogo y matricúlate en uno</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {misCursos.map((mat) => (
-                  <div key={mat.id} className="border-2 border-blue-100 rounded-lg p-5 bg-blue-50 hover:shadow-lg transition flex flex-col">
-                    <h3 className="text-xl font-bold text-blue-800 mb-2">{mat.curso?.titulo || mat.Curso?.titulo || 'Curso sin nombre'}</h3>
-                    <p className="text-gray-600 text-sm mb-4">{mat.curso?.descripcion || mat.Curso?.descripcion || 'Sin descripción'}</p>
-                    
-                    <div className="bg-white p-3 rounded border border-blue-100 mt-auto flex justify-between items-center">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase font-bold">Estado:</p>
-                        <p className="text-sm font-semibold text-green-600">✅ Activa</p>
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {misCursos.map((mat, i) => (
+                  <div key={mat.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 hover:border-indigo-500/40 hover:-translate-y-1 transition-all duration-300 animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                    <h3 className="text-white font-bold text-lg mb-1">{mat.curso?.titulo || 'Curso sin nombre'}</h3>
+                    <p className="text-gray-400 text-sm mb-4 line-clamp-2">{mat.curso?.descripcion || 'Sin descripción'}</p>
+                    <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                      <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full inline-block" />
+                        Activa
+                      </span>
                       <div className="text-right">
-                        <p className="text-xs text-gray-500 uppercase font-bold">Calificación:</p>
-                        <p className={`text-lg font-bold ${mat.nota_semestre ? 'text-blue-700' : 'text-gray-400'}`}>
-                          {mat.nota_semestre || 'Pendiente'}
+                        <p className="text-xs text-gray-500 mb-0.5">Calificación</p>
+                        <p className={`font-bold text-lg ${mat.nota_semestre ? 'text-indigo-400' : 'text-gray-600'}`}>
+                          {mat.nota_semestre ?? '—'}
                         </p>
                       </div>
                     </div>
@@ -210,112 +183,108 @@ export const Dashboard = () => {
           </div>
         )}
 
-        {/* VISTA: CATÁLOGO DE CURSOS */}
+        {/* ===== VISTA: CATÁLOGO ===== */}
         {vistaActual === 'catalogo' && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="animate-fade-in">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-700">Catálogo General</h2>
-              
+              <div>
+                <h2 className="text-2xl font-bold text-white">Catálogo de Cursos</h2>
+                <p className="text-gray-400 text-sm mt-1">{cursos.length} curso{cursos.length !== 1 ? 's' : ''} disponible{cursos.length !== 1 ? 's' : ''}</p>
+              </div>
               {puedeCrearCursos && (
-                <button 
+                <button
                   onClick={() => setMostrarFormulario(!mostrarFormulario)}
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/30 transition-all duration-200 hover:-translate-y-0.5"
                 >
-                  {mostrarFormulario ? 'Cancelar' : '+ Nuevo Curso'}
+                  <svg className={`w-4 h-4 transition-transform duration-300 ${mostrarFormulario ? 'rotate-45' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  {mostrarFormulario ? 'Cancelar' : 'Nuevo Curso'}
                 </button>
               )}
             </div>
 
-            {/* Formulario Crear Curso */}
+            {/* Formulario crear curso */}
             {mostrarFormulario && puedeCrearCursos && (
-              <form onSubmit={handleCrearCurso} className="mb-8 p-4 border-2 border-green-200 bg-green-50 rounded-lg">
-                <h3 className="font-bold text-green-800 mb-3">Detalles del Nuevo Curso</h3>
-                <div className="flex gap-4">
-                  <input 
-                    type="text" 
-                    placeholder="Título del curso" 
-                    value={nuevoTitulo}
-                    onChange={(e) => setNuevoTitulo(e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+              <form onSubmit={handleCrearCurso} className="mb-6 p-5 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl animate-slide-down">
+                <h3 className="text-indigo-300 font-semibold mb-4 text-sm uppercase tracking-wide">Nuevo curso</h3>
+                <div className="flex gap-3">
+                  <input
+                    type="text" placeholder="Título del curso" value={nuevoTitulo}
+                    onChange={(e) => setNuevoTitulo(e.target.value)} required
+                    className="flex-1 px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
                   />
-                  <input 
-                    type="text" 
-                    placeholder="Breve descripción..." 
-                    value={nuevaDescripcion}
-                    onChange={(e) => setNuevaDescripcion(e.target.value)}
-                    className="flex-2 w-1/2 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                  <input
+                    type="text" placeholder="Descripción breve..." value={nuevaDescripcion}
+                    onChange={(e) => setNuevaDescripcion(e.target.value)} required
+                    className="flex-1 px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
                   />
-                  <button type="submit" className="bg-green-600 text-white font-bold px-6 py-2 rounded hover:bg-green-700">
+                  <button type="submit" className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-all duration-200">
                     Guardar
                   </button>
                 </div>
               </form>
             )}
 
-            {/* Lista del Catálogo */}
-            {cargando && <p className="text-gray-500">Cargando cursos...</p>}
-            {error && <p className="text-red-500">Error: {error}</p>}
+            {cargando && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {[1,2,3].map(i => (
+                  <div key={i} className="bg-white/5 rounded-2xl p-5 border border-white/10 animate-pulse">
+                    <div className="h-5 bg-white/10 rounded-lg w-3/4 mb-3" />
+                    <div className="h-3 bg-white/5 rounded w-full mb-2" />
+                    <div className="h-3 bg-white/5 rounded w-2/3" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center gap-2 bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm">
+                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                {error}
+              </div>
+            )}
 
             {!cargando && !error && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {cursos.map((curso) => (
-                  <div key={curso.id} className="border rounded-lg p-5 hover:shadow-lg transition flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-bold text-blue-600">{curso.titulo}</h3>
-                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${curso.estado ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {curso.estado ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 text-sm mb-4">{curso.descripcion}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {cursos.map((curso, i) => (
+                  <div key={curso.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 hover:border-white/20 hover:-translate-y-1 transition-all duration-300 flex flex-col animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-white font-bold text-lg leading-tight">{curso.titulo}</h3>
+                      <span className={`ml-2 shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${curso.estado ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                        {curso.estado ? 'Activo' : 'Inactivo'}
+                      </span>
                     </div>
-                    
-                    {/* Botón para Estudiantes */}
+                    <p className="text-gray-400 text-sm flex-1 mb-4 line-clamp-2">{curso.descripcion || 'Sin descripción'}</p>
+
                     {esEstudiante && curso.estado && (
-                      <button 
-                        onClick={() => handleMatricular(curso.id)}
-                        className="w-full mt-4 bg-blue-50 text-blue-600 font-semibold py-2 rounded border border-blue-200 hover:bg-blue-600 hover:text-white transition"
-                      >
-                        Inscribirse al Curso
+                      <button onClick={() => handleMatricular(curso.id)} className="w-full py-2.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500 border border-indigo-500/40 text-indigo-400 hover:text-white text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5">
+                        Inscribirse al curso
                       </button>
                     )}
 
-                    {/* Botón para Profesores/Admins */}
                     {puedeVerEstudiantes && (
-                      <button 
-                        onClick={() => handleVerEstudiantes(curso.id)}
-                        className="w-full mt-4 bg-gray-50 text-gray-700 font-semibold py-2 rounded border border-gray-300 hover:bg-gray-200 transition"
-                      >
-                        {cursoViendo === curso.id ? 'Ocultar Estudiantes' : 'Ver Estudiantes'}
+                      <button onClick={() => handleVerEstudiantes(curso.id)} className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-sm font-medium transition-all duration-200">
+                        {cursoViendo === curso.id ? 'Ocultar estudiantes' : 'Ver estudiantes'}
                       </button>
                     )}
 
-                    {/* Lista Desplegable de Estudiantes con Calificación */}
                     {cursoViendo === curso.id && (
-                      <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                        <h4 className="text-sm font-bold text-blue-800 mb-3">Alumnos Matriculados:</h4>
+                      <div className="mt-4 pt-4 border-t border-white/10 animate-slide-down">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-3">Estudiantes matriculados</p>
                         {estudiantesCurso.length === 0 ? (
                           <p className="text-xs text-gray-500 italic">No hay alumnos inscritos aún.</p>
                         ) : (
-                          <ul className="text-sm text-gray-700 space-y-2">
+                          <ul className="space-y-2">
                             {estudiantesCurso.map((mat) => (
-                              <li key={mat.id} className="flex flex-col gap-2 border-b border-blue-200 pb-2">
-                                <span className="font-semibold">👤 {mat.estudiante?.nombre || mat.Usuario?.nombre} {mat.estudiante?.apellido || mat.Usuario?.apellido}</span>
-                                
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs bg-white border px-2 py-1 rounded shadow-sm">
-                                    Nota actual: <span className="font-bold text-blue-700">{mat.nota_semestre || 'Sin calificar'}</span>
-                                  </span>
-                                  
-                                  <button 
-                                    onClick={() => abrirModalCalificar(mat)}
-                                    className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded transition"
-                                  >
-                                    ✏️ Calificar
-                                  </button>
+                              <li key={mat.id} className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 gap-2">
+                                <div>
+                                  <p className="text-white text-sm font-medium">{mat.estudiante?.nombre} {mat.estudiante?.apellido}</p>
+                                  <p className="text-xs text-gray-500">Nota: <span className={`font-semibold ${mat.nota_semestre ? 'text-indigo-400' : 'text-gray-600'}`}>{mat.nota_semestre ?? '—'}</span></p>
                                 </div>
+                                <button onClick={() => abrirModalCalificar(mat)} className="shrink-0 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500 border border-amber-500/40 text-amber-400 hover:text-white text-xs font-semibold rounded-lg transition-all duration-200">
+                                  Calificar
+                                </button>
                               </li>
                             ))}
                           </ul>
@@ -324,58 +293,53 @@ export const Dashboard = () => {
                     )}
                   </div>
                 ))}
-                
+
                 {cursos.length === 0 && (
-                  <p className="text-gray-500 col-span-full">No hay cursos disponibles en el catálogo.</p>
+                  <div className="col-span-full text-center py-20 text-gray-500">
+                    <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p>No hay cursos en el catálogo todavía.</p>
+                  </div>
                 )}
               </div>
             )}
           </div>
         )}
-      </div>
+      </main>
 
-      {/* ========================================= */}
-      {/* MODAL ANIMADO DE CALIFICACIÓN             */}
-      {/* ========================================= */}
+      {/* Modal Calificación */}
       {estudianteACalificar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-96 max-w-full transform transition-all">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Asignar Calificación</h3>
-              <button onClick={() => setEstudianteACalificar(null)} className="text-gray-400 hover:text-red-500 text-xl font-bold">&times;</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-800 border border-white/15 rounded-3xl shadow-2xl w-full max-w-sm p-6 animate-scale-in">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-white font-bold text-lg">Asignar calificación</h3>
+              <button onClick={() => setEstudianteACalificar(null)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-all">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
-            
-            <p className="text-gray-600 text-sm mb-4">
-              Evaluando a: <span className="font-bold text-blue-600">{estudianteACalificar.nombre}</span>
+            <p className="text-gray-400 text-sm mb-4">
+              Evaluando a: <span className="text-indigo-400 font-semibold">{estudianteACalificar.nombre}</span>
             </p>
-            
-            <input 
-              type="text" 
-              placeholder="Ej. 95, Aprobado, A+" 
+            <input
+              type="number" min="0" max="100" step="0.01"
+              placeholder="Nota (0 – 100)"
               value={notaTemporal}
               onChange={(e) => setNotaTemporal(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-6 text-lg"
               autoFocus
+              className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white text-lg font-semibold placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all mb-5"
             />
-            
-            <div className="flex justify-end space-x-3">
-              <button 
-                onClick={() => setEstudianteACalificar(null)}
-                className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg transition font-semibold"
-              >
+            <div className="flex gap-3">
+              <button onClick={() => setEstudianteACalificar(null)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-sm font-medium transition-all">
                 Cancelar
               </button>
-              <button 
-                onClick={guardarNota}
-                className="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg shadow-md transition"
-              >
-                Guardar Nota
+              <button onClick={guardarNota} className="flex-1 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold shadow-lg shadow-indigo-500/30 transition-all duration-200">
+                Guardar nota
               </button>
             </div>
           </div>
         </div>
       )}
-      
     </div>
   );
 };
