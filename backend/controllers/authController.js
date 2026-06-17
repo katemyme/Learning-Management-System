@@ -9,6 +9,10 @@ const registrar = async (req, res) => {
   try {
     const { nombre, apellido, email, password, rol } = req.body;
 
+    if (!nombre || !apellido || !email || !password || !rol) {
+      return res.status(400).json({ mensaje: 'Todos los campos son obligatorios.' });
+    }
+
     // 1. Verificar si el correo ya existe
     const usuarioExistente = await Usuario.findOne({ where: { email } });
     if (usuarioExistente) {
@@ -50,16 +54,11 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Buscar al usuario por email
+    // 1. Buscar al usuario por email y verificar contraseña
     const usuario = await Usuario.findOne({ where: { email } });
-    if (!usuario) {
-      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
-    }
-
-    // 2. Comparar la contraseña ingresada con el hash de la BD
-    const passwordValida = await bcrypt.compare(password, usuario.password_hash);
-    if (!passwordValida) {
-      return res.status(401).json({ mensaje: 'Contraseña incorrecta' });
+    const passwordValida = usuario && await bcrypt.compare(password, usuario.password_hash);
+    if (!usuario || !passwordValida) {
+      return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
     }
 
     // 3. Generar el Token JWT
