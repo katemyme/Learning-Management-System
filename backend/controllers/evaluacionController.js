@@ -1,4 +1,4 @@
-const { Evaluacion, Matricula } = require('../models');
+const { Evaluacion, Matricula, Curso } = require('../models');
 
 // Crear una evaluación (Profesor/Admin)
 const crearEvaluacion = async (req, res) => {
@@ -17,10 +17,24 @@ const crearEvaluacion = async (req, res) => {
   }
 };
 
-// Ver todas las evaluaciones (Admin/Profesor)
+// Ver evaluaciones: admin ve todas, profesor solo las de sus cursos
 const obtenerEvaluaciones = async (req, res) => {
   try {
-    const evaluaciones = await Evaluacion.findAll();
+    const { rol, id: userId } = req.usuario;
+
+    const include = [{
+      model: Matricula,
+      as: 'matricula',
+      required: true,
+      include: [{
+        model: Curso,
+        as: 'curso',
+        required: true,
+        ...(rol === 'profesor' && { where: { profesor_id: userId } })
+      }]
+    }];
+
+    const evaluaciones = await Evaluacion.findAll({ include });
     res.status(200).json(evaluaciones);
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al obtener las evaluaciones', error: error.message });
