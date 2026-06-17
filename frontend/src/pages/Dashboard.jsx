@@ -119,7 +119,7 @@ export const Dashboard = () => {
       id: matricula.id,
       nombre: `${matricula.estudiante?.nombre || matricula.Usuario?.nombre} ${matricula.estudiante?.apellido || matricula.Usuario?.apellido}`
     });
-    setNotaTemporal(matricula.nota || ''); // Si ya tiene nota, la mostramos para editarla
+    setNotaTemporal(matricula.nota_semestre || ''); // Si ya tiene nota, la mostramos para editarla
   };
 
   const guardarNota = async () => {
@@ -198,8 +198,8 @@ export const Dashboard = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-gray-500 uppercase font-bold">Calificación:</p>
-                        <p className={`text-lg font-bold ${mat.nota ? 'text-blue-700' : 'text-gray-400'}`}>
-                          {mat.nota || 'Pendiente'}
+                        <p className={`text-lg font-bold ${mat.nota_semestre ? 'text-blue-700' : 'text-gray-400'}`}>
+                          {mat.nota_semestre || 'Pendiente'}
                         </p>
                       </div>
                     </div>
@@ -306,7 +306,7 @@ export const Dashboard = () => {
                                 
                                 <div className="flex justify-between items-center">
                                   <span className="text-xs bg-white border px-2 py-1 rounded shadow-sm">
-                                    Nota actual: <span className="font-bold text-blue-700">{mat.nota || 'Sin calificar'}</span>
+                                    Nota actual: <span className="font-bold text-blue-700">{mat.nota_semestre || 'Sin calificar'}</span>
                                   </span>
                                   
                                   <button 

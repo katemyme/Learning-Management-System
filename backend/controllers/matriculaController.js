@@ -94,7 +94,7 @@ const asignarNota = async (req, res) => {
     }
 
     // Actualizamos y guardamos
-    matricula.nota = nota;
+    matricula.nota_semestre = nota;
     await matricula.save();
 
     res.status(200).json({ mensaje: 'Nota asignada correctamente', matricula });

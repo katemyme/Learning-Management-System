@@ -8,17 +8,24 @@ const Matricula = sequelize.define('Matricula', {
     autoIncrement: true,
   },
   fecha_registro: {
-    type: DataTypes.DATEONLY, 
+    type: DataTypes.DATEONLY,
     allowNull: false,
-    defaultValue: DataTypes.NOW, 
+    defaultValue: DataTypes.NOW,
   },
-  nota: {
-    type: DataTypes.STRING, // Usamos STRING para que el profe pueda poner "95", "A", o "Aprobado"
-    allowNull: true         // Al principio es nulo porque el estudiante aún no tiene nota
-  }
+  nota_semestre: {
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: true,
+    validate: {
+      min: 0,
+      max: 100,
+    },
+  },
 }, {
   tableName: 'Matriculas',
-  timestamps: true
+  timestamps: true,
+  indexes: [
+    { unique: true, fields: ['estudiante_id', 'curso_id'] }
+  ]
 });
 
 module.exports = Matricula;
