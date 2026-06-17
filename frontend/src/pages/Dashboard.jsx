@@ -59,11 +59,12 @@ export const Dashboard = () => {
     }
   }, []);
 
-  // eslint-disable-next-line
   useEffect(() => {
     if (vistaActual === 'catalogo') {
+      // eslint-disable-next-line
       cargarDatos();
     } else if (vistaActual === 'misCursos') {
+      // eslint-disable-next-line
       cargarMisCursos();
     }
   }, [vistaActual, cargarDatos, cargarMisCursos]); 
