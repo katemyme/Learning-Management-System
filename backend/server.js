@@ -27,7 +27,7 @@ app.use('/api/evaluaciones', evaluacionRoutes);
 // Función para iniciar el servidor
 const iniciarServidor = async () => {
   try {
-    await sequelize.sync({ alter: true })
+    await sequelize.sync()
     console.log('✅ Base de datos sincronizada correctamente.');
 
     const PORT = process.env.PORT || 3000;
