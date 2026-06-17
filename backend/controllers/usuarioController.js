@@ -6,7 +6,7 @@ const obtenerUsuarios = async (req, res) => {
   try {
     // Excluimos la contraseña por seguridad
     const usuarios = await Usuario.findAll({
-      attributes: { exclude: ['password'] }
+      attributes: { exclude: ['password_hash'] }
     });
     res.status(200).json(usuarios);
   } catch (error) {
@@ -35,14 +35,13 @@ const actualizarUsuario = async (req, res) => {
 
     // Si se envía una nueva contraseña, la encriptamos antes de guardar
     if (password) {
-      datosActualizados.password = await bcrypt.hash(password, 10);
+      datosActualizados.password_hash = await bcrypt.hash(password, 10);
     }
 
     await usuario.update(datosActualizados);
 
-    // Retornamos el usuario actualizado sin la contraseña
     const usuarioRespuesta = usuario.toJSON();
-    delete usuarioRespuesta.password;
+    delete usuarioRespuesta.password_hash;
 
     res.status(200).json({ mensaje: 'Usuario actualizado con éxito', usuario: usuarioRespuesta });
   } catch (error) {
