@@ -15,10 +15,33 @@ const Curso = sequelize.define('Curso', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  estado: {
-    type: DataTypes.BOOLEAN, 
+  fecha_inicio: {
+    type: DataTypes.DATEONLY,
     allowNull: false,
-    defaultValue: true,      
+  },
+  fecha_fin: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+    validate: {
+      esDespuesDeInicio(value) {
+        if (value && this.fecha_inicio && value < this.fecha_inicio) {
+          throw new Error('fecha_fin debe ser igual o posterior a fecha_inicio.');
+        }
+      }
+    }
+  },
+  estado: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  },
+  profesor_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'Usuarios',
+      key: 'id',
+    },
   },
 }, {
   tableName: 'Cursos',
