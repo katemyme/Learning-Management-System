@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { obtenerCursos, crearCurso } from '../services/cursoService';
+import { obtenerCursos, crearCurso, obtenerProfesores } from '../services/cursoService';
 import { matricularEstudiante, obtenerEstudiantesDeCurso, obtenerMisCursos, asignarNota } from '../services/matriculaService';
 
 const obtenerRol = () => {
@@ -34,8 +34,8 @@ export const Dashboard = () => {
   const [estudiantesCurso, setEstudiantesCurso] = useState([]);
   const [cursoViendo, setCursoViendo]     = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [nuevoTitulo, setNuevoTitulo]     = useState('');
-  const [nuevaDescripcion, setNuevaDescripcion] = useState('');
+  const [profesores, setProfesores] = useState([]);
+  const [formCurso, setFormCurso] = useState({ titulo: '', descripcion: '', profesor_id: '', fecha_inicio: '', fecha_fin: '' });
   const [estudianteACalificar, setEstudianteACalificar] = useState(null);
   const [notaTemporal, setNotaTemporal]   = useState('');
 
@@ -58,11 +58,19 @@ export const Dashboard = () => {
 
   const handleCerrarSesion = () => { localStorage.removeItem('token'); navigate('/'); };
 
+  const abrirFormCurso = async () => {
+    if (!mostrarFormulario && profesores.length === 0) {
+      try { const p = await obtenerProfesores(); setProfesores(p); } catch {}
+    }
+    setMostrarFormulario(!mostrarFormulario);
+  };
+
   const handleCrearCurso = async (e) => {
     e.preventDefault();
     try {
-      await crearCurso(nuevoTitulo, nuevaDescripcion);
-      setNuevoTitulo(''); setNuevaDescripcion(''); setMostrarFormulario(false);
+      await crearCurso(formCurso);
+      setFormCurso({ titulo: '', descripcion: '', profesor_id: '', fecha_inicio: '', fecha_fin: '' });
+      setMostrarFormulario(false);
       cargarDatos();
     } catch (err) { alert(err.message); }
   };
@@ -161,7 +169,7 @@ export const Dashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {misCursos.map((mat, i) => (
-                  <div key={mat.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 hover:border-indigo-500/40 hover:-translate-y-1 transition-all duration-300 animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                  <div key={mat.id} onClick={() => navigate(`/curso/${mat.curso?.id}`)} className="cursor-pointer bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 hover:border-indigo-500/40 hover:-translate-y-1 transition-all duration-300 animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
                     <h3 className="text-white font-bold text-lg mb-1">{mat.curso?.titulo || 'Curso sin nombre'}</h3>
                     <p className="text-gray-400 text-sm mb-4 line-clamp-2">{mat.curso?.descripcion || 'Sin descripción'}</p>
                     <div className="flex items-center justify-between pt-3 border-t border-white/10">
@@ -193,7 +201,7 @@ export const Dashboard = () => {
               </div>
               {puedeCrearCursos && (
                 <button
-                  onClick={() => setMostrarFormulario(!mostrarFormulario)}
+                  onClick={abrirFormCurso}
                   className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold rounded-xl shadow-lg shadow-indigo-500/30 transition-all duration-200 hover:-translate-y-0.5"
                 >
                   <svg className={`w-4 h-4 transition-transform duration-300 ${mostrarFormulario ? 'rotate-45' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,21 +216,37 @@ export const Dashboard = () => {
             {mostrarFormulario && puedeCrearCursos && (
               <form onSubmit={handleCrearCurso} className="mb-6 p-5 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl animate-slide-down">
                 <h3 className="text-indigo-300 font-semibold mb-4 text-sm uppercase tracking-wide">Nuevo curso</h3>
-                <div className="flex gap-3">
-                  <input
-                    type="text" placeholder="Título del curso" value={nuevoTitulo}
-                    onChange={(e) => setNuevoTitulo(e.target.value)} required
-                    className="flex-1 px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
-                  />
-                  <input
-                    type="text" placeholder="Descripción breve..." value={nuevaDescripcion}
-                    onChange={(e) => setNuevaDescripcion(e.target.value)} required
-                    className="flex-1 px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
-                  />
-                  <button type="submit" className="px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-all duration-200">
-                    Guardar
-                  </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <input required type="text" placeholder="Título del curso" value={formCurso.titulo}
+                    onChange={e => setFormCurso({ ...formCurso, titulo: e.target.value })}
+                    className="col-span-2 px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all" />
+                  <input type="text" placeholder="Descripción breve..." value={formCurso.descripcion}
+                    onChange={e => setFormCurso({ ...formCurso, descripcion: e.target.value })}
+                    className="col-span-2 px-4 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all" />
+                  <div>
+                    <label className="text-indigo-200 text-xs font-medium block mb-1.5">Profesor</label>
+                    <select value={formCurso.profesor_id} onChange={e => setFormCurso({ ...formCurso, profesor_id: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-white/15 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all">
+                      <option value="">Sin asignar</option>
+                      {profesores.map(p => <option key={p.id} value={p.id}>{p.nombre} {p.apellido}</option>)}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-indigo-200 text-xs font-medium block mb-1.5">Fecha inicio</label>
+                      <input type="date" value={formCurso.fecha_inicio} onChange={e => setFormCurso({ ...formCurso, fecha_inicio: e.target.value })}
+                        className="w-full px-3 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-indigo-200 text-xs font-medium block mb-1.5">Fecha fin</label>
+                      <input type="date" value={formCurso.fecha_fin} onChange={e => setFormCurso({ ...formCurso, fecha_fin: e.target.value })}
+                        className="w-full px-3 py-2.5 bg-white/5 border border-white/15 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all" />
+                    </div>
+                  </div>
                 </div>
+                <button type="submit" className="mt-3 w-full py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-semibold rounded-xl transition-all">
+                  Guardar curso
+                </button>
               </form>
             )}
 
@@ -248,7 +272,7 @@ export const Dashboard = () => {
             {!cargando && !error && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {cursos.map((curso, i) => (
-                  <div key={curso.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 hover:border-white/20 hover:-translate-y-1 transition-all duration-300 flex flex-col animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
+                  <div key={curso.id} onClick={() => navigate(`/curso/${curso.id}`)} className="cursor-pointer bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 hover:border-indigo-500/40 hover:-translate-y-1 transition-all duration-300 flex flex-col animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-white font-bold text-lg leading-tight">{curso.titulo}</h3>
                       <span className={`ml-2 shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${curso.estado ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>
