@@ -18,7 +18,6 @@ const Usuario = sequelize.define('Usuario', {
   email: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    unique: true,
   },
   password_hash: {  
     type: DataTypes.STRING(255),
@@ -39,6 +38,9 @@ const Usuario = sequelize.define('Usuario', {
   timestamps: true,
   createdAt: 'fecha_registro',
   updatedAt: 'updatedAt',
+  indexes: [
+    { unique: true, fields: ['email'] }
+  ]
 });
 
 module.exports = Usuario;
