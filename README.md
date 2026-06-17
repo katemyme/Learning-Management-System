@@ -11,7 +11,7 @@ Una plataforma de gestión educativa (Learning Management System) desarrollada c
   - **Estudiante:** Acceso al catálogo general para matricularse y un panel personalizado ("Mis Cursos") para dar retroalimentación a sus inscripciones y notas finales.
 - **Gestión de Base de Datos:** Interacciones seguras y modelado relacional utilizando Sequelize (ORM) garantizando la integridad de los datos.
 
-## 💻 Stack Tecnológico
+##  Stack Tecnológico
 
 **Frontend:**
 
@@ -42,7 +42,7 @@ Asegúrate de tener instalado lo siguiente antes de levantar el entorno local:
 - Microsoft SQL Server y SQL Server Management Studio (SSMS) u otro cliente.
 - Git
 
-## 🛠️ Instalación y Configuración Local
+##  Instalación y Configuración Local
 
 ### 1. Clonar el repositorio
 
