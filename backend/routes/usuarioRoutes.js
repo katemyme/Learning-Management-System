@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const usuarioController = require('../controllers/usuarioController');
+
+router.get('/profesores', verificarToken, verificarRol(['admin']), usuarioController.obtenerProfesores);
 const { verificarToken, verificarRol } = require('../middlewares/authMiddleware');
 
 // Ver todos los usuarios (Solo Admin)

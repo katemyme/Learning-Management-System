@@ -1,18 +1,37 @@
-const { Curso } = require('../models');
+const { Curso, Usuario } = require('../models');
+
+// Obtener detalle de un curso con evaluaciones agrupadas por semana
+const obtenerDetalleCurso = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const curso = await Curso.findByPk(id, {
+      include: [
+        { model: Usuario, as: 'profesor', attributes: ['id', 'nombre', 'apellido'] },
+      ]
+    });
+    if (!curso) return res.status(404).json({ mensaje: 'Curso no encontrado.' });
+    res.status(200).json(curso);
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al obtener el curso', error: error.message });
+  }
+};
 
 // ==========================================
 // CREAR UN CURSO
 // ==========================================
 const crearCurso = async (req, res) => {
   try {
-    const { titulo, descripcion, estado, profesor_id } = req.body;
-    const idProfesor = profesor_id || req.usuario.id;
+    const { titulo, descripcion, estado, profesor_id, fecha_inicio, fecha_fin } = req.body;
+
+    if (!titulo) return res.status(400).json({ mensaje: 'El título es obligatorio.' });
 
     const nuevoCurso = await Curso.create({
       titulo,
       descripcion,
-      estado,
-      profesor_id: idProfesor
+      estado: estado ?? true,
+      profesor_id: profesor_id || null,
+      fecha_inicio: fecha_inicio || null,
+      fecha_fin: fecha_fin || null,
     });
 
     res.status(201).json({ mensaje: 'Curso creado exitosamente', curso: nuevoCurso });
@@ -81,4 +100,4 @@ const eliminarCurso = async (req, res) => {
 };
 
 // Asegúrate de exportar las 4 funciones
-module.exports = { crearCurso, obtenerCursos, actualizarCurso, eliminarCurso };
+module.exports = { crearCurso, obtenerCursos, obtenerDetalleCurso, actualizarCurso, eliminarCurso };

@@ -10,6 +10,7 @@ const usuarioRoutes = require('./routes/usuarioRoutes'); // <-- NUEVO
 const cursoRoutes = require('./routes/cursoRoutes');
 const matriculaRoutes = require('./routes/matriculaRoutes');
 const evaluacionRoutes = require('./routes/evaluacionRoutes');
+const entregaRoutes = require('./routes/entregaRoutes');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/usuarios', usuarioRoutes); // <-- NUEVO
 app.use('/api/cursos', cursoRoutes);
 app.use('/api/matriculas', matriculaRoutes);
 app.use('/api/evaluaciones', evaluacionRoutes);
+app.use('/api/entregas', entregaRoutes);
 
 // Función para iniciar el servidor
 const iniciarServidor = async () => {

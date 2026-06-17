@@ -66,4 +66,16 @@ const eliminarUsuario = async (req, res) => {
   }
 };
 
-module.exports = { obtenerUsuarios, actualizarUsuario, eliminarUsuario };
+const obtenerProfesores = async (req, res) => {
+  try {
+    const profesores = await Usuario.findAll({
+      where: { rol: 'profesor' },
+      attributes: ['id', 'nombre', 'apellido'],
+    });
+    res.status(200).json(profesores);
+  } catch (error) {
+    res.status(500).json({ mensaje: 'Error al obtener profesores', error: error.message });
+  }
+};
+
+module.exports = { obtenerUsuarios, obtenerProfesores, actualizarUsuario, eliminarUsuario };

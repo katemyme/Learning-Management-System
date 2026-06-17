@@ -5,6 +5,7 @@ const { verificarToken, verificarRol } = require('../middlewares/authMiddleware'
 
 // Ver todos los cursos 
 router.get('/', verificarToken, cursoController.obtenerCursos);
+router.get('/:id/detalle', verificarToken, cursoController.obtenerDetalleCurso);
 
 // Crear un curso
 router.post('/', verificarToken, verificarRol(['admin']), cursoController.crearCurso);
