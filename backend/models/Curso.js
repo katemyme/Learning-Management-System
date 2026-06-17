@@ -17,7 +17,7 @@ const Curso = sequelize.define('Curso', {
   },
   fecha_inicio: {
     type: DataTypes.DATEONLY,
-    allowNull: false,
+    allowNull: true,
   },
   fecha_fin: {
     type: DataTypes.DATEONLY,
