@@ -3,14 +3,14 @@ const { Evaluacion, Matricula } = require('../models');
 // Crear una evaluación (Profesor/Admin)
 const crearEvaluacion = async (req, res) => {
   try {
-    const { matricula_id, calificacion, observacion } = req.body;
+    const { matricula_id, numero_corte, calificacion, fecha_realizacion, observacion } = req.body;
 
     const matriculaExistente = await Matricula.findByPk(matricula_id);
     if (!matriculaExistente) {
       return res.status(404).json({ mensaje: 'La matrícula especificada no existe.' });
     }
 
-    const nuevaEvaluacion = await Evaluacion.create({ matricula_id, calificacion, observacion });
+    const nuevaEvaluacion = await Evaluacion.create({ matricula_id, numero_corte, calificacion, fecha_realizacion, observacion });
     res.status(201).json({ text: 'Evaluación registrada con éxito', evaluacion: nuevaEvaluacion });
   } catch (error) {
     res.status(500).json({ mensaje: 'Error al registrar la evaluación', error: error.message });
