@@ -6,17 +6,13 @@ export const matricularEstudiante = async (curso_id) => {
   if (!token) throw new Error('No estás autenticado');
 
   // Desciframos el token para obtener el ID del estudiante que inició sesión
-  const payload = JSON.parse(atob(token.split('.')[1]));
-  const usuario_id = payload.id;
-
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    // Enviamos el ID del estudiante y el ID del curso al backend
-    body: JSON.stringify({ usuario_id, curso_id })
+    body: JSON.stringify({ curso_id })
   });
 
   const data = await response.json();
