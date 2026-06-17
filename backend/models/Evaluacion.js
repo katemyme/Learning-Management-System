@@ -7,31 +7,28 @@ const Evaluacion = sequelize.define('Evaluacion', {
     primaryKey: true,
     autoIncrement: true,
   },
-  numero_corte: {
+  titulo: {
+    type: DataTypes.STRING(200),
+    allowNull: false,
+  },
+  descripcion: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  semana: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  calificacion: {
-    type: DataTypes.DECIMAL(5, 2),
+  numero_corte: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-    validate: {
-      min: 0,
-      max: 100,
-    },
-  },
-  fecha_realizacion: {
-    type: DataTypes.DATEONLY,
-    allowNull: true,
-  },
-  observacion: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
+    validate: { min: 1, max: 3 },
   },
 }, {
   tableName: 'Evaluaciones',
   timestamps: true,
   indexes: [
-    { unique: true, fields: ['matricula_id', 'numero_corte'] }
+    { unique: true, fields: ['curso_id', 'semana', 'numero_corte', 'titulo'] }
   ]
 });
 
